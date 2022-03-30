@@ -1,0 +1,226 @@
+---
+title: "Siamcat"
+author: "QD"
+date: "5-11-2020"
+output: html_document
+---
+## First go for label construction and siamcat object 
+```{r}
+label <- create.label(meta=sample_data(taxonomy_samples_phyloseq_rel_abun),
+    label = "ESBL_status",
+    case = c("ESBL_positive"))
+siamcat_tax_rel_abun <- siamcat(phyloseq=taxonomy_samples_phyloseq_rel_abun, label=label)
+show(siamcat_tax_rel_abun)
+```
+
+## Differential abundance testing
+```{r}
+sc.obj <- filter.features(siamcat_tax_rel_abun,
+    filter.method = 'prevalence',cutoff=0.10)
+
+sc.obj <- check.associations(
+    sc.obj,
+    sort.by = 'fc',
+    alpha = 0.05,
+    mult.corr = "fdr",
+    detect.lim = 10 ^-6,
+    plot.type = "quantile.box",
+    panels = c("fc", "prevalence", "auroc"))
+head(sort(sc.obj@associations$assoc.results$p.adj))
+## No significant associations found unfortunately....Lowest p-value is 0.817
+```
+## ML-based classification on species composition (using LASSO)
+```{r}
+set.seed(1000)
+sc.obj <- normalize.features(
+    sc.obj,
+    norm.method = "log.unit",
+    norm.param = list(
+        log.n0 = 1e-06,
+        n.p = 2,
+        norm.margin = 1
+    )
+)
+
+sc.obj <-  create.data.split(
+    sc.obj,
+    num.folds = 5,
+)
+
+sc.obj <- train.model(
+    sc.obj,
+    method = "lasso"
+)
+
+models <- models(sc.obj)
+models[[1]]
+
+sc.obj <- make.predictions(sc.obj)
+pred_matrix <- pred_matrix(sc.obj)
+head(pred_matrix)
+
+sc.obj <-  evaluate.predictions(sc.obj)
+model.evaluation.plot(sc.obj,fn.plot="I:/mm-research/CMAT/User_Ducarmon_Quinten/PIENTER/Figures_Tables/Preliminary/Fig_1E.pdf")
+model.evaluation.plot(sc.obj)
+```
+
+```{r}
+model.interpretation.plot(
+    sc.obj,
+    fn.plot = 'interpretation.pdf',
+    consens.thres = 0.5,
+    limits = c(-3, 3),
+    heatmap.type = 'zscore',
+)
+```
+
+## on KEGG KOs
+```{r}
+label <- create.label(meta=sample_data(phyloseq_kegg_rel_abun),
+    label = "ESBL_status",
+    case = c("ESBL_positive"))
+siamcat_kegg_rel_abun <- siamcat(phyloseq=phyloseq_kegg_rel_abun, label=label)
+show(siamcat_kegg_rel_abun)
+```
+
+## Differential abundance testing on KEGG KOs
+```{r}
+sc.obj_kegg <- filter.features(siamcat_kegg_rel_abun,
+    filter.method = 'prevalence',cutoff=0.10)
+
+sc.obj_kegg <- check.associations(
+    sc.obj_kegg,
+    sort.by = 'fc',
+    alpha = 0.05,
+    mult.corr = "fdr",
+    detect.lim = 10 ^-6,
+    plot.type = "quantile.box",
+    panels = c("fc", "prevalence", "auroc")) ## No significant associations. Get an idea of adjusted p-value
+head(sort(sc.obj_kegg@associations$assoc.results$p.adj)) ## So only 2 KOs with p-value of 0.098.... rest > 0.3
+
+```
+
+## ML-based classification on KEGG KOs relative abundance
+```{r}
+set.seed(1000)
+sc.obj_kegg <- normalize.features(
+    sc.obj_kegg,
+    norm.method = "log.unit",
+    norm.param = list(
+        log.n0 = 1e-06,
+        n.p = 2,
+        norm.margin = 1
+    )
+)
+
+sc.obj_kegg <-  create.data.split(
+    sc.obj_kegg,
+    num.folds = 5
+)
+
+sc.obj_kegg <- train.model(
+    sc.obj_kegg,
+    method = "lasso"
+)
+
+models <- models(sc.obj_kegg)
+models[[1]]
+
+sc.obj_kegg <- make.predictions(sc.obj_kegg)
+pred_matrix <- pred_matrix(sc.obj_kegg)
+head(pred_matrix)
+
+sc.obj_kegg <-  evaluate.predictions(sc.obj_kegg)
+model.evaluation.plot(sc.obj_kegg,fn.plot="I:/mm-research/CMAT/User_Ducarmon_Quinten/PIENTER/Figures_Tables/Preliminary/Fig_S2.pdf")
+model.evaluation.plot(sc.obj_kegg)
+```
+## Model interpretation plot
+```{r}
+model.interpretation.plot(
+    sc.obj_kegg,
+    fn.plot = 'interpretation.pdf',
+    consens.thres = 0.5,
+    limits = c(-3, 3),
+    heatmap.type = 'zscore',
+)
+```
+
+## On CAZy
+```{r}
+label <- create.label(meta=sample_data(phyloseq_cazy_rel_abun),
+    label = "ESBL_status",
+    case = c("ESBL_positive"))
+siamcat_cazy_rel_abun <- siamcat(phyloseq=phyloseq_cazy_rel_abun, label=label)
+show(siamcat_cazy_rel_abun)
+
+sc.obj_cazy <- filter.features(siamcat_cazy_rel_abun,
+    filter.method = 'prevalence',cutoff=0.10)
+
+sc.obj_cazy <- check.associations(
+    sc.obj_cazy,
+    sort.by = 'fc',
+    alpha = 0.1, ## Not even anything wiith p-value below 0.1
+    mult.corr = "fdr",
+    detect.lim = 10 ^-6,
+    plot.type = "quantile.box",
+    panels = c("fc", "prevalence", "auroc")) ## No significant associations. Get an idea of adjusted p-value
+head(sort(sc.obj_cazy@associations$assoc.results$p.adj)) ## Best is 0.69, so not even close to any significance.
+
+```
+## ML-based classification on CAZy relative abundance
+```{r}
+set.seed(1000)
+sc.obj_cazy <- normalize.features(
+    sc.obj_cazy,
+    norm.method = "log.unit",
+    norm.param = list(
+        log.n0 = 1e-06,
+        n.p = 2,
+        norm.margin = 1
+    )
+)
+
+sc.obj_cazy <-  create.data.split(
+    sc.obj_cazy,
+    num.folds = 5
+)
+
+sc.obj_cazy <- train.model(
+    sc.obj_cazy,
+    method = "lasso"
+)
+
+models <- models(sc.obj_cazy)
+models[[4]]
+
+sc.obj_cazy <- make.predictions(sc.obj_cazy)
+pred_matrix <- pred_matrix(sc.obj_cazy)
+head(pred_matrix)
+
+sc.obj_cazy <-  evaluate.predictions(sc.obj_cazy)
+model.evaluation.plot(sc.obj_cazy)
+#?train.model
+```
+
+## Resistome
+```{r}
+label <- create.label(meta=sample_data(phyloseq_resistome_gene_rel_abun),
+    label = "ESBL_status",
+    case = c("ESBL_positive"))
+siamcat_resistome_gene_rel_abun <- siamcat(phyloseq=phyloseq_resistome_gene_rel_abun, label=label)
+show(siamcat_resistome_gene_rel_abun)
+
+sc.obj_resistome_gene <- filter.features(siamcat_resistome_gene_rel_abun,
+    filter.method = 'prevalence',cutoff=0.10) ## As otherwise very few (14 genes) remained
+
+sc.obj_resistome_gene <- check.associations(
+    sc.obj_resistome_gene,
+    sort.by = 'fc',
+    alpha = 0.1, ## Not even anything wiith p-value below 0.1
+    mult.corr = "fdr",
+    detect.lim = 10 ^-6,
+    plot.type = "quantile.box",
+    panels = c("fc", "prevalence", "auroc")) ## No significant associations. Get an idea of adjusted p-value
+head(sort(sc.obj_resistome_gene@associations$assoc.results$p.adj)) ## Best is 0.442, so not even close to any significance.
+```
+

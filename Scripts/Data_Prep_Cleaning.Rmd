@@ -1,0 +1,205 @@
+---
+title: "Data_Prep_Cleaning"
+author: "QD"
+date: "27-10-2020"
+output: html_document
+---
+## Load libraries
+```{r}
+library(readxl)
+library(tidyverse)
+library(phyloseq)
+library(ggpubr)
+library(SIAMCAT)
+library(microbiome)
+library(tsnemicrobiota)
+library(vegan)
+library(Polychrome)
+library(reshape2)
+library(rstatix)
+library(geepack)
+library(mlr3)
+library(ggfortify)
+library(factoextra)
+library(pls)
+library(ropls)
+library(cowplot)
+library(ggord)
+```
+
+## Read in all relevant data and prepare phyloseq object for taxonomic analysis of samples
+```{r}
+taxonomy_mOTUs<-read.delim2("../Data/Processed_data/motus/motus_full_taxonomy.txt")
+rownames(taxonomy_mOTUs)<-taxonomy_mOTUs$mOTU
+taxonomy_mOTUs$Species_with_mOTUnr<-paste(taxonomy_mOTUs$species,taxonomy_mOTUs$mOTU, sep=" [")
+taxonomy_mOTUs$Species_with_mOTUnr[-length(taxonomy_mOTUs$Species_with_mOTUnr)] <- paste0(taxonomy_mOTUs$Species_with_mOTUnr[-length(taxonomy_mOTUs$Species_with_mOTUnr)], ']')
+taxonomy_mOTUs<-taxonomy_mOTUs[,-c(1,9)] 
+##Delete -1 category
+taxonomy_mOTUs<-taxonomy_mOTUs[-14213,]
+
+## Load count table and format the data properly so it's ready for use in a phyloseq object
+taxonomy_count_table_mOTUs<-read.delim2("../Data/Processed_data/motus/motus_2_5_results_filtered_fastq.tsv")
+taxonomy_count_table_mOTUs$X<-as.character(taxonomy_count_table_mOTUs$X)
+taxonomy_count_table_mOTUs$X<-plyr::revalue(taxonomy_count_table_mOTUs$X,c("-1"="[meta_-1]")) ##To make sure the non-assigned reads will also be captured by the regular expressions below.
+taxonomy_count_table_mOTUs$X<-unlist(str_extract_all(taxonomy_count_table_mOTUs$X,"\\[(?:ref|meta)(.*?)\\]"))
+taxonomy_count_table_mOTUs$X<-plyr::revalue(taxonomy_count_table_mOTUs$X,c("[meta_-1]"="-1"))
+taxonomy_count_table_mOTUs$X<-gsub("\\]","",taxonomy_count_table_mOTUs$X)
+taxonomy_count_table_mOTUs$X<-gsub("\\[","",taxonomy_count_table_mOTUs$X) ##These were some ugly regex to make sure everything is in a proper format.
+rownames(taxonomy_count_table_mOTUs)<-taxonomy_count_table_mOTUs$X
+taxonomy_count_table_mOTUs<-taxonomy_count_table_mOTUs[,-1]
+taxonomy_count_table_mOTUs$Row_names<-rownames(taxonomy_count_table_mOTUs)
+colnames(taxonomy_count_table_mOTUs)<-gsub("merged_runs_","",colnames(taxonomy_count_table_mOTUs))
+colnames(taxonomy_count_table_mOTUs)<-gsub("_.*","",colnames(taxonomy_count_table_mOTUs)) ## remove -1 category
+taxonomy_count_table_mOTUs<-taxonomy_count_table_mOTUs[-2,] ## Remove vegetarian
+taxonomy_count_table_mOTUs<-dplyr::select(taxonomy_count_table_mOTUs, -c("104184.001.090"))
+
+##Merge into phyloseq object
+## Merge into phyloseq object
+otumat<-as.matrix(taxonomy_count_table_mOTUs)
+class(otumat)<-"numeric"
+class(taxonomy_mOTUs)
+taxonomy_table<-as.matrix(taxonomy_mOTUs)
+metadata_phyloseq_tax <- readRDS(file = "../Data/Metadata/metadata_phyloseq_tax.rds")
+
+OTU=otu_table(otumat,taxa_are_rows=TRUE)
+TAX=tax_table(taxonomy_table)
+sampledata<-sample_data(metadata_phyloseq_tax)
+taxonomy_samples_phyloseq<-phyloseq(OTU,TAX,sampledata) ## Remove all mOTUs which are not observed in this data.
+taxonomy_samples_phyloseq<-prune_taxa(taxa_sums(taxonomy_samples_phyloseq) > 0, taxonomy_samples_phyloseq) 
+taxonomy_samples_phyloseq_rel_abun<-microbiome::transform(taxonomy_samples_phyloseq,"compositional")
+```
+## KEGG annotations 
+```{r}
+kegg_counts<-read_excel("../Data/Processed_data/kegg/igc.profiles_kegg_correct.xlsx") 
+taxonomy_kegg_counts<-kegg_counts[,1]
+kegg_counts<-as.data.frame(kegg_counts)
+rownames(kegg_counts)<-kegg_counts$...1
+kegg_counts<-kegg_counts[,-1]
+sum(kegg_counts) ## Sum of 356650615
+taxonomy_kegg_counts<-dplyr::rename(taxonomy_kegg_counts,"KEGG"="...1")
+taxonomy_kegg_counts<-as.data.frame(taxonomy_kegg_counts)
+rownames(taxonomy_kegg_counts)<-taxonomy_kegg_counts$KEGG
+colnames(kegg_counts)<-gsub("_........-........_merged_lanes","",colnames(kegg_counts))
+colnames(kegg_counts)<-gsub("merged_runs_","",colnames(kegg_counts)) ## Now remove the four positive controls and the vegetarian
+kegg_counts<-dplyr::select(kegg_counts, -c("104184-001-090","104184-001-103","104184-001-104","104184-001-111","104184-001-112"))
+colnames(kegg_counts)<-gsub("-","\\.",colnames(kegg_counts))
+keggmat<-as.matrix(kegg_counts)
+class(keggmat)<-"numeric"
+class(taxonomy_kegg_counts)
+taxonomy_kegg<-as.matrix(taxonomy_kegg_counts)
+KEGG_otu=otu_table(keggmat,taxa_are_rows=TRUE)
+KEGG_tax=tax_table(taxonomy_kegg)
+phyloseq_kegg<-phyloseq(KEGG_otu,KEGG_tax,sampledata)
+phyloseq_kegg<-prune_taxa(taxa_sums(phyloseq_kegg) > 0, phyloseq_kegg) ## Remove all KEGG KOs without any counts
+phyloseq_kegg_rel_abun<-microbiome::transform(phyloseq_kegg,"compositional")
+```
+
+## CAZy annotations
+```{r}
+cazy_counts<-read_excel("../Data/Processed_data/cazy/igc.profiles_cazy_correct.xlsx")
+taxonomy_cazy_counts<-cazy_counts[,1]
+cazy_counts<-as.data.frame(cazy_counts)
+rownames(cazy_counts)<-cazy_counts$...1
+cazy_counts<-cazy_counts[,-1]
+taxonomy_cazy_counts<-dplyr::rename(taxonomy_cazy_counts,"CAZy"="...1")
+taxonomy_cazy_counts<-as.data.frame(taxonomy_cazy_counts)
+rownames(taxonomy_cazy_counts)<-taxonomy_cazy_counts$CAZy
+colnames(cazy_counts)<-gsub("_........-........_merged_lanes","",colnames(cazy_counts))
+colnames(cazy_counts)<-gsub("merged_runs_","",colnames(cazy_counts)) ## Now remove the four positive controls and the vegetarian --> 
+cazy_counts<-dplyr::select(cazy_counts, -c("104184-001-090","104184-001-103","104184-001-104","104184-001-111","104184-001-112"))
+colnames(cazy_counts)<-gsub("-","\\.",colnames(cazy_counts))
+cazymat<-as.matrix(cazy_counts)
+class(cazymat)<-"numeric"
+class(taxonomy_cazy_counts)
+taxonomy_cazy<-as.matrix(taxonomy_cazy_counts)
+CAZy_otu=otu_table(cazymat,taxa_are_rows=TRUE)
+CAZy_tax=tax_table(taxonomy_cazy)
+phyloseq_cazy<-phyloseq(CAZy_otu,CAZy_tax,sampledata)
+phyloseq_cazy<-prune_taxa(taxa_sums(phyloseq_cazy) > 0, phyloseq_cazy) ## Remove all CAZy families without any counts
+phyloseq_cazy_rel_abun<-microbiome::transform(phyloseq_cazy,"compositional")
+phyloseq_cazy_integer<-phyloseq_cazy ## Only to check alpha diversity with the same function as always! As required input is counts
+phyloseq_cazy_integer@otu_table@.Data<-round(phyloseq_cazy_integer@otu_table@.Data,digits=0) ## There are no values between 0 and 0.5, so nothing is rounded to 0 which it shouldn't
+```
+
+## Resistome profiling
+```{r}
+resistome_counts<-read_excel("../Data/Processed_data/resistome/all_samples_gene_megares.xlsx")
+resistome_counts<- resistome_counts %>% drop_na(Class) ## Remove all empty/uninformative rows without AMR information
+resistome_counts$SNP_Confirmation<-as.factor(resistome_counts$SNP_Confirmation)
+resistome_counts_no_snps<-resistome_counts %>% filter(is.na(SNP_Confirmation))
+resistome_counts_no_snps$Sample<-gsub("fixed_merged_runs_","",resistome_counts_no_snps$Sample)
+resistome_counts_no_snps$Sample<-gsub("_merged_lanes_L001_R1_kneaddata_paired","",resistome_counts_no_snps$Sample)
+resistome_counts_no_snps$Sample<-gsub("_merged_lanes_L001_R1_kneaddata_paired","",resistome_counts_no_snps$Sample)
+resistome_counts_no_snps$Sample<-gsub("_........-........" , "" , resistome_counts_no_snps$Sample)
+resistome_counts_no_snps<-resistome_counts_no_snps[,-7] ##SNP confirmation column is not needed anymore
+taxonomy_resistome<-resistome_counts_no_snps[,2:6]
+taxonomy_resistome<-distinct(taxonomy_resistome)
+taxonomy_resistome<-as.data.frame(taxonomy_resistome)
+rownames(taxonomy_resistome)<-taxonomy_resistome$MEG
+taxonomy_resistome<-taxonomy_resistome[,-1]
+count_table_resistome<-resistome_counts_no_snps[,-c(3:6,8)]
+count_table_resistome$Hits<-as.numeric(count_table_resistome$Hits)
+sum(count_table_resistome$Hits) ## Sum of 266001, check after conversions whether intact
+count_table_resistome<- count_table_resistome %>% dcast(Sample~MEG,value.var="Hits")
+rownames(count_table_resistome)<-count_table_resistome$Sample
+count_table_resistome<-count_table_resistome[,-1]
+count_table_resistome <- replace(count_table_resistome,is.na(count_table_resistome),0)
+sum(count_table_resistome) ## Still 266001, so all good. Remove the vegetarian 104184.001.090
+remove<-"104184-001-090"
+count_table_resistome<-count_table_resistome[!rownames(count_table_resistome) %in% remove, ]
+count_table_resistome_final<-t(count_table_resistome)
+colnames(count_table_resistome_final)<-gsub("-","\\.",colnames(count_table_resistome_final))
+
+megmat<-as.matrix(count_table_resistome_final)
+class(megmat)<-"numeric"
+class(taxonomy_resistome)
+taxonomy_resistome<-as.matrix(taxonomy_resistome)
+MEGresistome=otu_table(megmat,taxa_are_rows=TRUE)
+TAXresistome=tax_table(taxonomy_resistome)
+phyloseq_resistome<-phyloseq(MEGresistome,TAXresistome,sampledata) ## Doublecheck if the removed vegetarian did not have any unique MEGs. So apparently not
+phyloseq_resistome<-prune_taxa(taxa_sums(phyloseq_resistome) > 0, phyloseq_resistome) 
+phyloseq_resistome_rel_abun<-microbiome::transform(phyloseq_resistome,"compositional")
+sum(phyloseq_resistome@otu_table@.Data)
+phyloseq_resistome_gene<-tax_glom(phyloseq_resistome,taxrank=rank_names(phyloseq_resistome)[4],NArm=F)
+phyloseq_resistome_gene_rel_abun<-microbiome::transform(phyloseq_resistome_gene,"compositional")
+##Check unique number of mechanisms
+phyloseq_resistome_mech<-tax_glom(phyloseq_resistome,taxrank=rank_names(phyloseq_resistome)[2],NArm=F)
+```
+## General info on alignment
+```{r}
+general_info_alignments_igc_complete <- readRDS("../Data/Processed_data/general_info_alignments/general_info_alignments_igc_complete.rds")
+general_info_alignments_igc_complete$percentage_reads_mapped_igc<-general_info_alignments_igc_complete$Total_Reads_aligned_IGC/general_info_alignments_igc_complete$Total_cleaned_reads
+mean(general_info_alignments_igc_complete$percentage_reads_mapped_igc)
+sd(general_info_alignments_igc_complete$percentage_reads_mapped_igc) ##Now compare ESBL groups
+t.test(percentage_reads_mapped_igc~ESBL_status,data=general_info_alignments_igc_complete)
+##Now check percentage of KEGG
+general_info_alignments_igc_complete$percentage_aligned_kegg<-general_info_alignments_igc_complete$Total_Reads_aligned_KEGG_KO/general_info_alignments_igc_complete$Total_Reads_aligned_IGC
+mean(general_info_alignments_igc_complete$percentage_aligned_kegg)
+sd(general_info_alignments_igc_complete$percentage_aligned_kegg) ##Now compare ESBL groups
+t.test(percentage_aligned_kegg~ESBL_status,data=general_info_alignments_igc_complete)
+##Now check percentage of CAZy
+general_info_alignments_igc_complete$percentage_aligned_cazy<-general_info_alignments_igc_complete$Total_Reads_aligned_CAZy/general_info_alignments_igc_complete$Total_Reads_aligned_IGC
+mean(general_info_alignments_igc_complete$percentage_aligned_cazy)
+sd(general_info_alignments_igc_complete$percentage_aligned_cazy) ##Now compare ESBL groups
+t.test(percentage_aligned_cazy~ESBL_status,data=general_info_alignments_igc_complete)
+```
+## General info resistome, aligned reads as a percentage of total clean reads
+```{r}
+general_info_alignments_igc_complete$percentage_aligned_megares<-general_info_alignments_igc_complete$Total_Reads_aligned_MegaRes/general_info_alignments_igc_complete$Total_cleaned_reads
+mean(general_info_alignments_igc_complete$percentage_aligned_megares)*100 ## To get a percentage mean
+sd(general_info_alignments_igc_complete$percentage_aligned_megares)*100 ## To get a percentage for sd ##Now compare ESBL groups
+t.test(percentage_aligned_megares~ESBL_status,data=general_info_alignments_igc_complete)
+```
+
+## Load metabolite data
+```{r}
+metabolite_concentrations_time_0_incl_metadata <- readRDS("../Data/Processed_data/metabolomics/metabolite_concentrations_time_0_incl_metadata.rds")
+```
+
+## Load and prepare mash output to be ready for NDMS. This still needs some checking as to why it's not working yet.
+```{r}
+mash_distances_incl_metadata <- readRDS("../Data/Processed_data/mash/mash_distances_incl_metadata.rds")
+complete_mash_distance_matrix <- readRDS("../Data/Processed_data/mash/complete_mash_distance_matrix.rds")
+nmds_df <- readRDS("../Data/Processed_data/mash/nmds_df.rds")
+```
+

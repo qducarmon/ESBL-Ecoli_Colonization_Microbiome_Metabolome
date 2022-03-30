@@ -1,0 +1,99 @@
+antibiotic12mont,abroad6months,allgroep,gender_true,age_year,ESBL_status,participant_number
+No,Yes,Dutch,Female,24,ESBL_positive,P01
+No,No,Dutch,Male,20,ESBL_negative,P51
+No,Yes,Dutch,Male,65,ESBL_negative,P52
+No,Yes,Dutch,Male,65,ESBL_negative,P53
+No,Yes,Second generation other-Western,Male,45,ESBL_negative,P54
+No,Yes,Dutch,Female,27,ESBL_positive,P02
+No,Yes,Dutch,Male,65,ESBL_positive,P03
+No,No,Dutch,Female,24,ESBL_negative,P55
+No,No,Dutch,Female,71,ESBL_positive,P04
+No,Yes,Dutch,Male,24,ESBL_positive,P05
+No,Yes,Dutch,Male,69,ESBL_positive,P06
+No,Yes,Dutch,Female,24,ESBL_negative,P56
+Yes,Yes,Dutch,Male,32,ESBL_negative,P57
+No,Yes,Dutch,Male,65,ESBL_positive,P07
+No,Yes,Dutch,Male,38,ESBL_positive,P08
+No,Yes,Dutch,Female,22,ESBL_negative,P58
+No,No,Dutch,Male,44,ESBL_negative,P59
+No,Yes,Dutch,Female,22,ESBL_positive,P09
+No,Yes,Dutch,Female,52,ESBL_negative,P60
+No,No,Dutch,Male,74,ESBL_positive,P10
+Yes,No,Dutch,Female,43,ESBL_positive,P11
+No,Yes,Dutch,Male,51,ESBL_negative,P61
+No,Yes,Dutch,Female,50,ESBL_positive,P12
+No,Yes,Dutch,Female,46,ESBL_positive,P13
+No,Yes,Dutch,Female,52,ESBL_positive,P14
+No,No,Dutch,Female,61,ESBL_positive,P15
+No,Yes,Dutch,Male,28,ESBL_positive,P16
+No,Yes,Dutch,Female,55,ESBL_positive,P17
+No,No,Dutch,Female,28,ESBL_negative,P62
+No,Yes,Second generation other-Western,Female,53,ESBL_positive,P18
+Yes,Yes,First generation other non-Western,Female,42,ESBL_negative,P63
+Yes,Yes,Dutch,Male,51,ESBL_positive,P19
+No,Yes,Dutch,Male,70,ESBL_negative,P64
+No,Yes,Dutch,Female,66,ESBL_positive,P20
+Do not know,No,Dutch,Female,41,ESBL_positive,P21
+Yes,Yes,Dutch,Female,43,ESBL_positive,P22
+No,Yes,Dutch,Male,22,ESBL_negative,P65
+No,Yes,Dutch,Female,28,ESBL_positive,P23
+No,Yes,Dutch,Female,46,ESBL_negative,P66
+No,Yes,Dutch,Male,65,ESBL_negative,P67
+Yes,Yes,Dutch,Male,47,ESBL_negative,P68
+Yes,Yes,Dutch,Female,28,ESBL_negative,P69
+No,Yes,Dutch,Male,59,ESBL_negative,P70
+No,Yes,Dutch,Male,58,ESBL_positive,P24
+No,No,Dutch,Female,61,ESBL_negative,P71
+No,No,Dutch,Female,41,ESBL_negative,P72
+No,Yes,Dutch,Male,58,ESBL_negative,P73
+No,Yes,Dutch,Male,38,ESBL_negative,P74
+No,Yes,Dutch,Female,21,ESBL_negative,P75
+No,Yes,Dutch,Female,55,ESBL_negative,P76
+No,Yes,Dutch,Female,50,ESBL_negative,P77
+No,Yes,Dutch,Male,24,ESBL_negative,P78
+No,Yes,Dutch,Female,50,ESBL_positive,P25
+No,Yes,Dutch,Male,52,ESBL_negative,P79
+No,No,Dutch,Female,28,ESBL_positive,P26
+No,No,Dutch,Female,56,ESBL_negative,P80
+Yes,Yes,Dutch,Male,65,ESBL_positive,P27
+No,Yes,Second generation other-Western,Female,60,ESBL_negative,P81
+No,Yes,Dutch,Male,22,ESBL_positive,P28
+No,No,Dutch,Male,44,ESBL_positive,P29
+No,No,Dutch,Female,56,ESBL_positive,P30
+No,Yes,Dutch,Male,24,ESBL_negative,P82
+No,Yes,Dutch,Male,32,ESBL_positive,P31
+No,Yes,Dutch,Female,71,ESBL_negative,P83
+No,Yes,Second generation other-Western,Male,45,ESBL_positive,P32
+No,Yes,Dutch,Male,36,ESBL_negative,P84
+No,No,Dutch,Female,44,ESBL_positive,P33
+No,Yes,Dutch,Female,21,ESBL_positive,P34
+No,Yes,Dutch,Male,64,ESBL_positive,P35
+No,Yes,First generation other non-Western,Male,38,ESBL_positive,P36
+No,Yes,Dutch,Male,24,ESBL_positive,P37
+No,Yes,Dutch,Female,50,ESBL_negative,P85
+No,No,Dutch,Male,74,ESBL_negative,P86
+Yes,Yes,Dutch,Male,47,ESBL_positive,P38
+No,No,First generation other non-Western,Male,68,ESBL_positive,P39
+No,No,Dutch,Female,44,ESBL_negative,P88
+No,Yes,First generation other non-Western,Male,60,ESBL_negative,P89
+No,Yes,Dutch,Male,49,ESBL_negative,P90
+No,No,Dutch,Female,24,ESBL_positive,P40
+No,No,Dutch,Male,35,ESBL_negative,P91
+Yes,Yes,First generation Suriname+Aruba+Dutch Antilles,Female,59,ESBL_positive,P41
+No,Yes,First generation Suriname+Aruba+Dutch Antilles,Female,50,ESBL_negative,P92
+No,Yes,Second generation Suriname+Aruba+Dutch Antilles,Female,39,ESBL_negative,P93
+No,Yes,First generation other non-Western,Male,62,ESBL_positive,P42
+No,Yes,First generation other non-Western,Male,36,ESBL_positive,P43
+Yes,Yes,First generation other-Western,Female,25,ESBL_negative,P94
+No,No,First generation other non-Western,Male,65,ESBL_positive,P44
+No,Yes,First generation Suriname+Aruba+Dutch Antilles,Female,43,ESBL_positive,P45
+No,Yes,Dutch,Female,27,ESBL_negative,P95
+Yes,Yes,First generation Suriname+Aruba+Dutch Antilles,Female,49,ESBL_positive,P46
+No,Yes,First generation Suriname+Aruba+Dutch Antilles,Male,52,ESBL_negative,P96
+No,Yes,First generation other non-Western,Female,55,ESBL_negative,P97
+No,Yes,First generation other non-Western,Female,45,ESBL_positive,P47
+No,Yes,Second generation other-Western,Male,51,ESBL_positive,P48
+No,Yes,First generation Suriname+Aruba+Dutch Antilles,Male,37,ESBL_negative,P98
+Yes,Yes,First generation other non-Western,Male,39,ESBL_negative,P99
+No,Yes,First generation other non-Western,Female,46,ESBL_positive,P50
+No,Yes,Dutch,Male,28,ESBL_negative,P100

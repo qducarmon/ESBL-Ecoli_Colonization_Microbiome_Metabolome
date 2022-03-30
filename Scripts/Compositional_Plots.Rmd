@@ -1,0 +1,303 @@
+---
+title: "Compositional_Plots"
+author: "QD"
+date: "5-11-2020"
+output: html_document
+---
+## Define colors
+```{r}
+manualcolors<-c( 'red2','forestgreen', 'orange', 'cornflowerblue', 
+                 'darkolivegreen4',  
+                'indianred1', 'firebrick4', 
+                '#DDAD4B','darkblue',  'yellowgreen', 'tan3',
+                "tan1",'darkgray', 'wheat4', 'mediumorchid1',
+                'moccasin', 'mediumvioletred', 'seagreen','cadetblue1',
+                "darkolivegreen1","tan2","tomato3" )
+
+#'magenta',
+```
+
+## Make compositional plots, phylum level
+```{r}
+phylum_composition<-microbiome::aggregate_top_taxa(taxonomy_samples_phyloseq_rel_abun,top=8,"phylum")
+phylum_composition_df<-psmelt(phylum_composition)
+phylum_composition_df$phylum<-fct_relevel(phylum_composition_df$phylum,"Other",after=Inf)
+
+phylum_composition_figure<-ggplot(phylum_composition_df)+
+  aes(x=participant_number,y=Abundance,fill=phylum,color=phylum)+
+  geom_bar(stat="identity",colour=NA)+
+  scale_fill_brewer(palette="Paired")+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(legend.text = element_text(face = "italic"))+
+  theme(axis.text.x=element_text(size=6),axis.title=element_text(size=16))+
+  ylab("Relative abundance")+
+  labs(fill="Phylum")+
+  theme(legend.text=element_text(size=14),legend.title=element_text(size=16))+
+  facet_grid(~ESBL_status,scales="free_x")+
+  guides(fill=guide_legend(ncol=1))
+```
+
+## Make compositional plots, family level
+```{r}
+manualcolors<-c( 'red2','forestgreen', 'orange', 'cornflowerblue', 
+                 'darkolivegreen4',  
+                'indianred1', 'firebrick4', 
+                '#DDAD4B','darkblue',  'yellowgreen', 'tan3',
+                "tan1",'darkgray', 'wheat4', 
+                'moccasin', 'mediumvioletred', 'mediumorchid1','seagreen','cadetblue1',
+                "darkolivegreen1","tan2","tomato3" )
+
+#'magenta',
+
+family_composition<-microbiome::aggregate_top_taxa(taxonomy_samples_phyloseq_rel_abun,top=20,"family")
+family_composition_df<-psmelt(family_composition)
+family_composition_df$family<-fct_relevel(family_composition_df$family,"Other",after=Inf)
+family_composition_df$ESBL_status<-plyr::revalue(family_composition_df$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+
+family_composition_figure<-ggplot(family_composition_df)+
+  aes(x=participant_number,y=Abundance,fill=family,color=family)+
+  geom_bar(stat="identity",colour=NA)+
+  scale_fill_manual(values=manualcolors)+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(legend.text = element_text(face = "italic"))+
+  theme(axis.text.x=element_text(size=12),axis.title=element_text(size=16))+
+  theme(axis.text.x=element_blank())+
+  ylab("Relative abundance")+
+  xlab("")+
+  labs(fill="Family")+
+  theme(legend.text=element_text(size=14),legend.title=element_text(size=16))+
+  facet_grid(~ESBL_status,scales="free_x")+
+  guides(fill=guide_legend(ncol=1))
+```
+
+
+## Make compositional plots, genus level
+```{r}
+genus_composition<-microbiome::aggregate_top_taxa(taxonomy_samples_phyloseq_rel_abun,top=20,"genus")
+genus_composition_df<-psmelt(genus_composition)
+genus_composition_df$genus<-fct_relevel(genus_composition_df$genus,"Other",after=Inf)
+genus_composition_df$ESBL_status<-plyr::revalue(genus_composition_df$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+
+genus_composition_figure<-ggplot(genus_composition_df)+
+  aes(x=participant_number,y=Abundance,fill=genus,color=genus)+
+  geom_bar(stat="identity",colour=NA)+
+  scale_fill_manual(values=manualcolors)+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(legend.text = element_text(face = "italic"))+
+  theme(axis.text.x=element_text(size=12),axis.title=element_text(size=16))+
+  theme(axis.text.x=element_blank())+
+  ylab("Relative abundance")+
+  xlab("")+
+  labs(fill="Genus")+
+  theme(legend.text=element_text(size=14),legend.title=element_text(size=16))+
+  facet_grid(~ESBL_status,scales="free_x")+
+  guides(fill=guide_legend(ncol=1))
+
+compositional_plots<-ggarrange(family_composition_figure,genus_composition_figure,labels=c("A","B",ncol=2,nrow=1))
+ggsave(file="I:/mm-research/CMAT/User_Ducarmon_Quinten/PIENTER/Figures_Tables/Preliminary/Fig_S1_Composition.svg", plot=compositional_plots, width=20, height=7.5,dpi=1200)
+```
+
+## Species level
+```{r}
+rank_names(taxonomy_samples_phyloseq_rel_abun)
+species_composition<-microbiome::aggregate_top_taxa(taxonomy_samples_phyloseq_rel_abun,top=29,"Species_with_mOTUnr")
+species_composition_df<-psmelt(species_composition)
+species_composition_df$Species_with_mOTUnr<-fct_relevel(species_composition_df$Species_with_mOTUnr,"Other",after=Inf)
+unique(species_composition_df$Species_with_mOTUnr)
+
+species_composition_df$Species_with_mOTUnr<-plyr::revalue(species_composition_df$Species_with_mOTUnr,c("Prevotella copri [Prevotella copri CAG:164/Prevotella copri] [ref_mOTU_v25_03701]"="Prevotella copri [ref_mOTU_v25_03701]","Ruminococcus bromii [Ruminococcus sp. CAG:108/Ruminococcus sp. A254.MGS-108/uncultured Ruminococcus sp./Ruminococcus sp. CAG:108-related_41_35/Ruminococcus bromii] [ref_mOTU_v25_00853]"="Ruminococcus bromii [ref_mOTU_v25_00853]","Bifidobacterium longum [Bifidobacterium longum CAG:69/Bifidobacterium longum] [ref_mOTU_v25_01099]"="Bifidobacterium longum [ref_mOTU_v25_01099]","[Eubacterium] rectale [Eubacterium rectale CAG:36/Eubacterium sp. 41_20/[Eubacterium] rectale] [ref_mOTU_v25_03657]"="[Eubacterium] rectale [ref_mOTU_v25_03657]","Faecalibacterium prausnitzii [uncultured Faecalibacterium sp./Faecalibacterium prausnitzii] [ref_mOTU_v25_06108]"="Faecalibacterium prausnitzii [ref_mOTU_v25_06108]","Collinsella aerofaciens [Collinsella sp. CAG:166/Collinsella sp. 4_8_47FAA/Collinsella aerofaciens] [ref_mOTU_v25_03626]"="Collinsella aerofaciens [ref_mOTU_v25_03626]","Blautia obeum/wexlerae [Ruminococcus sp. CAG:9/Blautia sp. Marseille-P2398/Ruminococcus sp. CAG:9-related_41_34/Blautia obeum/Blautia wexlerae/Ruminococcus sp. 5_1_39BFAA] [ref_mOTU_v25_02154]"="Blautia obeum/wexlerae [ref_mOTU_v25_02154]","Faecalibacterium sp. [Faecalibacterium sp. CAG:74/Faecalibacterium sp. CAG:74_58_120] [ref_mOTU_v25_03636]"="Faecalibacterium sp. [ref_mOTU_v25_03636]","Faecalibacterium prausnitzii [uncultured Faecalibacterium sp./Faecalibacterium prausnitzii] [ref_mOTU_v25_06110]"="Faecalibacterium prausnitzii [ref_mOTU_v25_06110]"))
+
+mean_abundances_top_species <- species_composition_df %>% group_by(OTU) %>% summarize(mean_abundance = mean(Abundance, na.rm = TRUE),sd = sd(Abundance, na.rm=TRUE))
+
+Species_with_mOTUnr_composition_figure<-ggplot(species_composition_df)+
+  aes(x=participant_number,y=Abundance,fill=Species_with_mOTUnr,color=Species_with_mOTUnr)+
+  geom_bar(stat="identity",colour=NA)+
+  scale_fill_manual(values=manualcolors)+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(legend.text = element_text(face = "italic"))+
+  theme(axis.text.x=element_blank())+
+  ylab("Relative abundance")+
+  xlab("")+
+  labs(fill="Species_with_mOTUnr")+
+  theme(legend.text=element_text(size=14),legend.title=element_text(size=16))+
+  facet_grid(~ESBL_status,scales="free_x")+
+  guides(fill=guide_legend(ncol=1))
+
+
+## Pretty high bifido in some people, would be interesting to see if these are elderly (like in the NH study)
+species_composition_df_bifido<-subset(species_composition_df,Species_with_mOTUnr=="Bifidobacterium adolescentis [ref_mOTU_v25_02703]"|Species_with_mOTUnr=="Bifidobacterium ruminantium [ref_mOTU_v25_02702]"|Species_with_mOTUnr=="Bifidobacterium longum [ref_mOTU_v25_01099]")
+
+species_composition_df_bifido$age_year<-as.numeric(as.character(species_composition_df_bifido$age_year)) ## Something goes wrong with conversion here
+ggplot(species_composition_df_bifido)+
+  aes(x=age_year,y=Abundance)+
+  geom_point()+
+  stat_cor(method="spearman")+
+  facet_grid(~Species_with_mOTUnr) ## No superstrong correlation, and more in opposite of what we found in NH, and more in line with literature. Maybe can do a general check to see if there are strong correlations with age, would be interesting.
+
+rel_abun_vis<-psmelt(taxonomy_samples_phyloseq_rel_abun)
+cor(rel_abun_vis$Abundance,rel_abun_vis$age_year)
+
+cor_overview<-rel_abun_vis %>%
+  group_by(Species_with_mOTUnr) %>%
+  summarize(COR=cor(Abundance,age_year,method=c("pearson","kendall","spearman")))
+
+motus_25_perc_df<-psmelt(motus_25_perc)
+cor_overview2<-motus_25_perc_df %>%
+  group_by(Species_with_mOTUnr) %>%
+  summarize(COR=cor(Abundance,age_year,method=c("pearson","kendall","spearman"))) ## No strong correlations are seen actually, although need to have a deeper look, as R=-0.36, as for B. longum, is not even observed in this list.
+```
+
+## CAZy families
+```{r}
+manualcolors<-c( 'red2','forestgreen', 'orange', 'cornflowerblue', 
+                 'darkolivegreen4',  
+                'indianred1', 'firebrick4', 
+                '#DDAD4B','darkblue',  'yellowgreen', 'tan3',
+                "tan1",'darkgray', 'wheat4', 'mediumorchid1',
+                'moccasin', 'mediumvioletred', 'seagreen','cadetblue1',
+                "darkolivegreen1","tan2","tomato3" )
+
+cazy_composition<-microbiome::aggregate_top_taxa(phyloseq_cazy_rel_abun,top=20,"CAZy")
+cazy_composition_df<-psmelt(cazy_composition)
+cazy_composition_df$CAZy<-fct_relevel(cazy_composition_df$CAZy,"Other",after=Inf)
+unique(cazy_composition_df$CAZy)
+cazy_composition_df$CAZy<-fct_relevel(cazy_composition_df$CAZy,c("GH3","GH5","GH13","GH20","GH29","GH31","GH32","GH38","GH43","GH51","GH77","GH95","GT1","GT2","GT4","GT5","GT28","GT35","GT36","GT51","Other"))
+
+cazy_composition_df$ESBL_status<-plyr::revalue(cazy_composition_df$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+
+## Also check means per CAZyme, as interesting to report which were the most abundant
+mean_abundances_cazymes <- cazy_composition_df %>% group_by(OTU) %>% summarize(mean_abundance = mean(Abundance, na.rm = TRUE),sd = sd(Abundance, na.rm=TRUE))
+?summarize
+
+cazy_composition_figure<-ggplot(cazy_composition_df)+
+  aes(x=participant_number,y=Abundance,fill=CAZy,color=CAZy)+
+  geom_bar(stat="identity",colour=NA)+
+  scale_fill_manual(values=manualcolors)+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(axis.text.x=element_text(size=12),axis.title=element_text(size=16))+
+  theme(legend.title = element_text(size = 16))+
+  theme(legend.text=element_text(size=16))+
+  ylab("Relative abundance")+
+  xlab("")+
+  labs(fill="CAZy family")+
+  theme(axis.text.x=element_blank())+
+  theme(axis.title=element_text(size=14),axis.text=element_text(size=14))+
+  facet_grid(~ESBL_status,scales="free_x")+
+  guides(fill=guide_legend(ncol=1))
+```
+## Resistome plots
+```{r}
+manualcolors<-c( 'red2','forestgreen', 'orange', 'cornflowerblue', 
+                 'darkolivegreen4',  
+                'indianred1', 'firebrick4', 
+                '#DDAD4B','darkblue',  'yellowgreen', 'tan3',
+                "tan1",'darkgray', 'wheat4', 'mediumorchid1',
+                'moccasin', 'mediumvioletred', 'seagreen','cadetblue1',
+                "darkolivegreen1","tan2","tomato3" )
+
+mech_composition<-microbiome::aggregate_top_taxa(phyloseq_resistome_rel_abun,top=8,"Mech")
+mech_composition_df<-psmelt(mech_composition)
+mech_composition_df$Mech<-fct_relevel(mech_composition_df$Mech,"Other",after=Inf)
+mech_composition_df$Mech<-fct_relevel(mech_composition_df$Mech, "Mupirocin", after = Inf)
+mech_composition_df$Mech<-fct_relevel(mech_composition_df$Mech, "Tetracyclines", after = Inf)##Reorder so that Tetracyclin and mupiricon are the lowest 2 in the plot
+mech_composition_df$Mech<-plyr::revalue(mech_composition_df$Mech,c("betalactams"="Betalactams","Drug_and_biocide_resistance"="Drug and biocide"))
+unique(mech_composition_df$Mech)
+mech_composition_df$ESBL_status<-plyr::revalue(mech_composition_df$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+## Get some information on % of tetracyclin and mupirocon across all participants
+mean_sd_main_ab_resistance<-mech_composition_df %>% group_by(Mech) %>% summarise(average = mean(Abundance),standarddev=sd(Abundance)) 
+
+
+mech_composition_figure<-ggplot(mech_composition_df)+
+  aes(x=participant_number,y=Abundance,fill=Mech,color=Mech)+
+  geom_bar(stat="identity",colour=NA)+
+  scale_fill_manual(values=manualcolors)+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(axis.text.x=element_text(size=12),axis.title=element_text(size=16))+
+  ylab("Relative abundance")+
+  labs(fill="Mechanism")+
+  xlab("")+
+  theme(axis.text.x=element_blank())+
+  theme(legend.text=element_text(size=14),legend.title=element_text(size=16))+
+  facet_grid(~ESBL_status,scales="free_x")+
+  guides(fill=guide_legend(ncol=1))
+```
+
+## Resistome at gene level
+```{r}
+manualcolors<-c( 'red2','forestgreen', 'cornflowerblue', 'orange', 
+                 'darkolivegreen4',  
+                'indianred1', 'firebrick4', 
+                '#DDAD4B','darkblue',  'yellowgreen', 'tan3',
+                "tan1",'darkgray', 'wheat4', 'seagreen',
+                'moccasin', 'mediumvioletred', 'mediumorchid1','cadetblue1',
+                "darkolivegreen1","tan2","tomato3" )
+
+gene_composition<-microbiome::aggregate_top_taxa(phyloseq_resistome_rel_abun,top=15,"Gene")
+gene_composition_df<-psmelt(gene_composition)
+gene_composition_df$Gene<-fct_relevel(gene_composition_df$Gene,"Other",after=Inf)
+#mech_composition_df$Gene<-plyr::revalue(gene_composition_df$Gene,c("betalactams"="Betalactams","Drug_and_biocide_resistance"="Drug and biocide resistance"))
+unique(gene_composition_df$Gene)
+
+gene_composition_df$ESBL_status<-plyr::revalue(gene_composition_df$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+
+gene_composition_figure<-ggplot(gene_composition_df)+
+  aes(x=participant_number,y=Abundance,fill=Gene,color=Gene)+
+  geom_bar(stat="identity",colour=NA)+
+  scale_fill_manual(values=manualcolors)+
+  theme(axis.text.x = element_text(angle=45,hjust=1))+
+  theme(axis.text.x=element_text(size=12),axis.title=element_text(size=16))+
+  ylab("Relative abundance")+
+  xlab("")+
+  labs(fill="Gene")+
+  theme(legend.text = element_text(face = "italic"))+
+  theme(axis.text.x=element_blank())+
+  theme(legend.text=element_text(size=14),legend.title=element_text(size=16))+
+  facet_grid(~ESBL_status,scales="free_x")+
+  guides(fill=guide_legend(ncol=1))
+
+##Combine compositional plots at gene and mechanism level
+Fig3C_D<-ggarrange(mech_composition_figure,gene_composition_figure,labels=c("C","D",ncol=2,nrow=1))
+ggsave(file="I:/mm-research/CMAT/User_Ducarmon_Quinten/PIENTER/Figures_Tables/Preliminary/Fig3C_D.svg", plot=Fig3C_D, width=16, height=12,dpi=1200)
+```
+## As the ileS gene is noteworthy highly present in some samples and is known to be Bifidobacterium-intrinsic, correlate relative abundance of Bifodobacterium (genus level) with relative abundance of ileS
+```{r}
+bifidobacterium_genus_rel_abun<-subset(genus_composition_df,OTU=="Bifidobacterium")
+iles_rel_abun<-subset(gene_composition_df,OTU=="ILES")
+iles_rel_abun<-dplyr::rename(iles_rel_abun,c(resistance_gene=OTU,abundance_iles=Abundance))
+iles_bifido_rel_abun<-merge(bifidobacterium_genus_rel_abun, iles_rel_abun, by="Sample")
+
+FigS4<-ggplot(iles_bifido_rel_abun)+
+  aes(x=Abundance,y=abundance_iles)+
+  geom_point()+
+  stat_cor(method="spearman")+
+  theme(axis.text.x=element_text(size=12),axis.title=element_text(size=16))+
+  theme(legend.text=element_text(size=14),legend.title=element_text(size=16))+
+  xlab("Relative abundance Bifidobacterium")+
+  ylab("Relative abundance ILES gene")+
+  theme(plot.title = element_text(size = 16))+
+  ggtitle("Correlation between relative abundance of ILES gene and Bifidobacterium")
+
+ggsave(file="I:/mm-research/CMAT/User_Ducarmon_Quinten/PIENTER/Figures_Tables/Preliminary/FigS4.svg", plot=FigS4, width=16, height=12,dpi=1200)
+```
+
+## Specifically check the E. coli mOTU on request of the reviewer
+```{r}
+my_subset <- subset(otu_table(taxonomy_samples_phyloseq_rel_abun), rownames(otu_table(taxonomy_samples_phyloseq_rel_abun)) %in% c("ref_mOTU_v25_00095")) ## Select the E. coli mOTU known from the positive controls
+E_coli_motu <- merge_phyloseq(my_subset, tax_table(taxonomy_samples_phyloseq_rel_abun), sample_data(taxonomy_samples_phyloseq_rel_abun))
+E_coli_motu_df <- psmelt(E_coli_motu)
+E_coli_motu_df$ESBL_status<-plyr::revalue(E_coli_motu_df$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+
+ggplot(E_coli_motu_df)+
+  aes(x=ESBL_status,y = Abundance, fill = ESBL_status)+
+  geom_violin()+
+  stat_compare_means(method="t.test",label.x=1.5)+
+  scale_fill_manual(values=c("dodgerblue2", "orange"))+
+  geom_point(position="jitter")+
+  labs(fill="ESBL status")+
+  ylab("Relative abundance of ref_mOTU_v25_00095")+
+  xlab("")
+ 
+  
+
+```
+

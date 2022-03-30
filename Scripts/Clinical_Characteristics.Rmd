@@ -1,0 +1,22 @@
+---
+title: "Clinical_Characteristics"
+author: "QD"
+date: "4-11-2020"
+output: html_document
+---
+
+## Do some clinical characteristic testing
+```{r}
+t.test(age_year ~ ESBL_status, paired = FALSE, data = metadata_phyloseq_tax) ## Matching variable
+gender_table <- table(metadata_phyloseq_tax$gender_true, metadata_phyloseq_tax$ESBL_status) ## Matching variable
+fisher.test(gender_table) 
+abroad_table <- table(metadata_phyloseq_tax$abroad6months, metadata_phyloseq_tax$ESBL_status) ## Matching variable
+fisher.test(abroad_table) ## Matching variable
+allgroeptable <- table(metadata_phyloseq_tax$allgroep, metadata_phyloseq_tax$ESBL_status) ## Matching variable
+fisher.test(allgroeptable)
+antibiotic12monttable <- table(metadata_phyloseq_tax$antibiotic12mont, metadata_phyloseq_tax$ESBL_status) 
+fisher.test(antibiotic12monttable)
+
+## Get IQR for age of both groups
+metadata_phyloseq_tax %>% group_by(ESBL_status) %>% summarise(IQR = IQR(age_year), q25 = quantile(age_year, 0.25), q75 = quantile(age_year, 0.75))
+```

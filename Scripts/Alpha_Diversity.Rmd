@@ -1,0 +1,156 @@
+---
+title: "Alpha_Diversity"
+author: "QD"
+date: "5-11-2020"
+output: html_document
+---
+## Compute alpha diversity estimates
+```{r}
+alpha_diversities<-estimate_richness(taxonomy_samples_phyloseq)
+alpha_diversities$SampleID<-rownames(alpha_diversities)
+alpha_diversities$SampleID<-gsub("X104184.001.","104184.001.",alpha_diversities$SampleID)
+metadata_diversity<-metadata_phyloseq_tax
+metadata_diversity$SampleID<-rownames(metadata_diversity)
+diversities<-merge(metadata_diversity,alpha_diversities, by = "SampleID") ## Use Shannon and observed OTUs to explore the richness/diversity
+diversities<-dplyr::rename(diversities,Observed_OTUs=Observed)
+```
+## Visualize results
+```{r}
+diversities$ESBL_status<-plyr::revalue(diversities$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+
+mean(diversities$Observed_OTUs)
+
+## Observed mOTUs
+mOTUs_observed<-ggplot(diversities)+
+  aes(x=ESBL_status,y=Observed_OTUs,fill=ESBL_status)+
+  stat_compare_means(method="t.test",label.x=1.5)+
+  geom_violin()+
+  scale_fill_manual(values=c("dodgerblue2", "orange"))+
+  geom_point(position="jitter")+
+  theme(legend.title = element_text(size = 16))+
+  theme(legend.text=element_text(size=16))+
+  ggtitle("Observed mOTUs")+
+  ylab("Observed mOTUs")+
+  xlab("")+
+  labs(fill="ESBL status")+
+  theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+
+## Chao1 index
+Chao1<-ggplot(diversities)+
+  aes(x=ESBL_status,y=Chao1,fill=ESBL_status)+
+  stat_compare_means(method="t.test",label.x=1.5)+
+  geom_violin()+
+  scale_fill_manual(values=c("dodgerblue2", "orange"))+
+  geom_point(position="jitter")+
+  theme(legend.title = element_text(size=14))+
+  theme(legend.text=element_text(size=14))+
+  ggtitle("")+
+  ylab("Observed OTUs")+
+  xlab("")+
+  labs(fill="ESBL status")
+
+## Shannon index
+Shannon<-ggplot(diversities)+
+  aes(x=ESBL_status,y=Shannon,fill=ESBL_status)+
+  stat_compare_means(method="t.test",label.x=1.5)+
+  geom_violin()+
+  scale_fill_manual(values=c("dodgerblue2", "orange"))+
+  geom_point(position="jitter")+
+  theme(legend.title = element_text(size = 16))+
+  theme(legend.text=element_text(size=16))+
+  ggtitle("Shannon index")+
+  ylab("Shannon index")+
+  xlab("")+
+  labs(fill="ESBL status")+
+  theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+
+alpha_diversities<-ggarrange(mOTUs_observed,Shannon,labels=c("A","B",ncol=2,nrow=1),common.legend = TRUE)
+```
+## CAZy families
+```{r}
+alpha_diversities_cazy<-estimate_richness(phyloseq_cazy_integer,measures="Observed")
+alpha_diversities_cazy$SampleID<-rownames(alpha_diversities_cazy)
+alpha_diversities_cazy$SampleID<-gsub("X104184.001.","104184.001.",alpha_diversities_cazy$SampleID)
+metadata_diversity_cazy<-metadata_phyloseq_tax
+metadata_diversity_cazy$SampleID<-rownames(metadata_diversity_cazy)
+diversities_cazy<-merge(metadata_diversity_cazy,alpha_diversities_cazy, by = "SampleID")
+diversities_cazy<-dplyr::rename(diversities_cazy,Observed_CAZy=Observed)
+mean(diversities_cazy$Observed_CAZy)
+sd(diversities_cazy$Observed_CAZy)
+t.test(Observed_CAZy~ESBL_status,data=diversities_cazy)
+```
+
+## Observed CAZy
+```{r}
+diversities_cazy$ESBL_status<-plyr::revalue(diversities_cazy$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+CAZy_observed<-ggplot(diversities_cazy)+
+  aes(x=ESBL_status,y=Observed_CAZy,fill=ESBL_status)+
+  stat_compare_means(method="t.test",label.x=1.5)+
+  geom_violin()+
+  scale_fill_manual(values=c("dodgerblue2", "orange"))+
+  geom_point(position="jitter")+
+  theme(legend.title = element_text(size = 16))+
+  theme(legend.text=element_text(size=16))+
+  theme(legend.position = "none")+
+  ggtitle("Observed CAZy families")+
+  labs(fill="ESBL status")+
+  ylab("Observed CAZy families")+
+  xlab("")+
+  theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+```
+
+## Resistome
+## Compute alpha diversity estimates
+```{r}
+alpha_diversities_resistome<-estimate_richness(phyloseq_resistome,measures="Observed")
+alpha_diversities_resistome$SampleID<-rownames(alpha_diversities_resistome)
+alpha_diversities_resistome$SampleID<-gsub("X104184.001.","104184.001.",alpha_diversities_resistome$SampleID)
+metadata_diversity_resistome<-metadata_phyloseq_tax
+metadata_diversity_resistome$SampleID<-rownames(metadata_diversity_resistome)
+diversities_resistome<-merge(metadata_diversity_resistome,alpha_diversities_resistome, by = "SampleID") ## Use Shannon and observed OTUs to explore the richness/diversity
+diversities_resistome<-dplyr::rename(diversities_resistome,Observed_MEGs=Observed)
+```
+## Observed MEGs and genes
+
+```{r}
+MEGss_observed<-ggplot(diversities_resistome)+
+  aes(x=ESBL_status,y=Observed_MEGs,fill=ESBL_status)+
+  stat_compare_means(method="t.test",label.x=1.5)+
+  geom_violin()+
+  scale_fill_manual(values=c("dodgerblue2", "orange"))+
+  geom_point(position="jitter")+
+  theme(legend.title = element_text(size = 14))+
+  theme(legend.text=element_text(size=14))+
+  ggtitle("")+
+  ylab("Observed MEGs")+
+  xlab("")+
+  theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+```
+
+```{r}
+alpha_diversities_resistome<-estimate_richness(phyloseq_resistome_gene,measures="Observed")
+alpha_diversities_resistome$SampleID<-rownames(alpha_diversities_resistome)
+alpha_diversities_resistome$SampleID<-gsub("X104184.001.","104184.001.",alpha_diversities_resistome$SampleID)
+metadata_diversity_resistome<-metadata_phyloseq_tax
+metadata_diversity_resistome$SampleID<-rownames(metadata_diversity_resistome)
+diversities_resistome<-merge(metadata_diversity_resistome,alpha_diversities_resistome, by = "SampleID") ## Use Shannon and observed OTUs to explore the richness/diversity
+diversities_resistome<-dplyr::rename(diversities_resistome,Observed_ARGs=Observed)
+```
+## Observed genes
+
+```{r}
+diversities_resistome$ESBL_status<-plyr::revalue(diversities_resistome$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+args_observed<-ggplot(diversities_resistome)+
+  aes(x=ESBL_status,y=Observed_ARGs,fill=ESBL_status)+
+  stat_compare_means(method="t.test",label.x=1.5)+
+  geom_violin()+
+  scale_fill_manual(values=c("dodgerblue2", "orange"))+
+  geom_point(position="jitter")+
+  theme(legend.title = element_text(size = 16))+
+  theme(legend.text=element_text(size=16))+
+  ggtitle("Observed ARGs")+
+  ylab("Observed ARGs")+
+  xlab("")+
+  labs(fill="ESBL status")+
+  theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+```

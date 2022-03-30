@@ -1,0 +1,75 @@
+---
+title: "Beta_Diversity"
+author: "QD"
+date: "5-11-2020"
+output: html_document
+---
+
+##Start with PCoA
+```{r}
+esbl_colors <- c("dodgerblue2", "orange")
+pcoa_info <- ordinate(taxonomy_samples_phyloseq_rel_abun, method='PCoA', distance = 'bray')
+pcoa_plot <- plot_ordination(taxonomy_samples_phyloseq_rel_abun, pcoa_info, color="ESBL_status", title='PCoA (Bray-Curtis)') + geom_point(size=3)+scale_color_manual(values=esbl_colors)+stat_ellipse(type="norm",linetype=2)+labs(color="ESBL_status")+xlab("PC1 [9.5%]")+ylab("PC2 [8.3%]")+theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+```
+##Now t-SNE
+```{r}
+set.seed(100)
+tsne_info <- tsne_phyloseq(taxonomy_samples_phyloseq_rel_abun)
+tsne_plot <- plot_tsne_phyloseq(taxonomy_samples_phyloseq_rel_abun,tsne_info,color="ESBL_status", title='t-SNE (Bray-Curtis)')+geom_point(size=3)+xlab("t-SNE1")+ylab("t-SNE2")+scale_color_manual(values=esbl_colors)+theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+ggarrange(pcoa_plot,tsne_plot,labels=c("C","D",ncol=1,nrow=2),common.legend = TRUE)
+Fig_1A_D<-ggarrange(mOTUs_observed,Shannon,pcoa_plot,tsne_plot,labels=c("A","B","C","D",ncol=2,nrow=2),common.legend = TRUE)
+ggsave(file="Fig_1A_D.svg", plot=Fig_1A_D, width=16, height=12,dpi=1200)
+```
+
+## For KEGG ko relative abundance
+```{r}
+pcoa_kegg_info <- ordinate(phyloseq_kegg_rel_abun, method='PCoA', distance = 'bray')
+pcoa_kegg_plot <- plot_ordination(phyloseq_kegg_rel_abun, pcoa_kegg_info, color="ESBL_status", title='PCoA KEGG (Bray-Curtis)') + geom_point(size=3)+scale_color_manual(values=esbl_colors)+stat_ellipse(type="norm",linetype=2)+labs(color="ESBL_status")+xlab("PC1 [25.7%]")+ylab("PC2 [17.1%]")  
+```
+## KEGG t-SNE
+```{r}
+set.seed(1000)
+tsne_kegg_info <- tsne_phyloseq(phyloseq_kegg_rel_abun)
+tsne_kegg_plot <- plot_tsne_phyloseq(phyloseq_kegg_rel_abun,tsne_kegg_info,color="ESBL_status", title='t-SNE (Bray-Curtis) on KEGG KO')+geom_point(size=3)+xlab("t-SNE1")+ylab("t-SNE2")+scale_color_manual(values=esbl_colors)
+ggarrange(pcoa_kegg_plot,tsne_plot,labels=c("A","B",ncol=1,nrow=2))
+```
+
+
+
+## For CAZy relative abundance
+```{r}
+pcoa_cazy_info <- ordinate(phyloseq_cazy_rel_abun, method='PCoA', distance = 'bray')
+pcoa_cazy_plot <- plot_ordination(phyloseq_cazy_rel_abun, pcoa_cazy_info, color="ESBL_status", title='PCoA CAZy (Bray-Curtis)') + geom_point(size=3)+scale_color_manual(values=esbl_colors)+stat_ellipse(type="norm",linetype=2)+labs(color="ESBL_status")+xlab("PC1 [30.7%]")+ylab("PC2 [19.8%]")+theme(legend.position = "none")+labs(fill="ESBL status")+theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+
+Fig_2A_B<-ggarrange(CAZy_observed,pcoa_cazy_plot,labels=c("A","B","C",ncol=2,nrow=2),common.legend = TRUE)
+Fig_2C<-ggarrange(cazy_composition_figure,cazy_composition_figure,labels=c("C","D",ncol=2,nrow=1),common.legend = FALSE)
+plot_grid(CAZy_observed, pcoa_cazy_plot,cazy_composition_figure,labels=c("A", "B","C"), ncol = 3, nrow = 1)
+
+
+ggsave(file="Fig_2A_B.svg", plot=Fig_2A_B, width=16, height=12,dpi=1200)
+ggsave(file="Fig_2C.svg", plot=Fig_2C, width=16, height=12,dpi=1200)
+```
+
+## Resistome
+```{r}
+pcoa_resistome_info <- ordinate(phyloseq_resistome_gene_rel_abun, method='PCoA', distance = 'bray')
+pcoa_resistome_plot <- plot_ordination(phyloseq_resistome_gene_rel_abun, pcoa_resistome_info, color="ESBL_status", title='PCoA ARGs (Bray-Curtis)') + geom_point(size=3)+scale_color_manual(values=esbl_colors)+stat_ellipse(type="norm",linetype=2)+labs(color="ESBL_status")+xlab("PC1 [42.8%]")+ylab("PC2 [16.7%]")+labs(fill="ESBL status")+theme(axis.title=element_text(size=14),axis.text=element_text(size=14))
+
+##Combine plot with alpha diversity of resistome
+Fig_3A_B<-ggarrange(args_observed,pcoa_resistome_plot,labels=c("A","B",ncol=2,nrow=1),common.legend = TRUE)
+ggsave(file="Fig_3A_B.svg", plot=Fig_3A_B, width=16, height=12,dpi=1200)
+```
+## Mash distance visualization
+```{r}
+esbl_colors <- c("dodgerblue2", "orange")
+
+nmds_plot <- ggplot(nmds_df)+
+  aes(x=MDS1,y=MDS2,color=ESBL_status)+
+  geom_point()+
+  scale_color_manual(labels=c("ESBL negative","ESBL positive"),values=esbl_colors)+
+  labs(color="ESBL status")+
+  stat_ellipse(type="norm",linetype=2)
+
+ggsave(file="Fig_S2.svg", plot=nmds_plot, width=7, height=6,dpi=1200)
+```
+

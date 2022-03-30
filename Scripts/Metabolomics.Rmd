@@ -1,0 +1,123 @@
+---
+title: "Metabolomics"
+author: "QD"
+date: "10-3-2021"
+output: html_document
+---
+
+##Real metabolomics analysis, first transform the variables with log10
+```{r}
+## Could consider to also do sample-based median normalization?
+metabolite_concentrations_time_0_incl_metadata_log10 <- mutate_if(metabolite_concentrations_time_0_incl_metadata, is.numeric, log10) 
+scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm) ## Now center metabolites and then scale to obtain mean of 0 and sd of 1 (code is the same as the standard scale function)
+metabolite_concentrations_time_0_incl_metadata_log10 <- metabolite_concentrations_time_0_incl_metadata_log10 %>% mutate_if(is.numeric, scale2)
+
+#metabolite_concentrations_time_0_incl_metadata_log10_num <- metabolite_concentrations_time_0_incl_metadata_log10 %>% dplyr::select(where(is.numeric)) ## Only select numeric columns. 
+#metabolite_concentrations_time_0_incl_metadata_log10_num <- scale(metabolite_concentrations_time_0_incl_metadata_log10_num)
+```
+
+## T-test, there are no sigificant differences
+```{r}
+## First transform into long data frame and then perform fdr-corrected t-tests per metabolite
+metabolite_concentrations_time_0_incl_metadata_log10_long <- metabolite_concentrations_time_0_incl_metadata_log10 %>% pivot_longer(cols=Acetate:Xylose,names_to="Metabolite")
+metabolite_concentrations_time_0_incl_metadata_log10_long$ESBL_status<-plyr::revalue(metabolite_concentrations_time_0_incl_metadata_log10_long$ESBL_status,c("ESBL_negative"="ESBL negative","ESBL_positive"="ESBL positive"))
+
+##Use 2 different multi-error correction methods, as the results are strongly influenced by this. It is not fair to pick 1 to fit our story best, so show both and then readers can decide for themselves (I will obviously also share my opinion on this in the discussion)
+
+stat.test_BH <- metabolite_concentrations_time_0_incl_metadata_log10_long %>%
+  group_by(Metabolite) %>%
+  t_test(value ~ ESBL_status) %>%
+  adjust_pvalue(method="BH") %>%
+  mutate(y.position = 2.5)
+
+stat.test_Holm <- metabolite_concentrations_time_0_incl_metadata_log10_long %>%
+  group_by(Metabolite) %>%
+  t_test(value ~ ESBL_status) %>%
+  adjust_pvalue(method="holm") %>%
+  mutate(y.position = 2.5)
+
+##Round p-values to 3 decimals
+stat.test_BH$p.adj <- round(stat.test_BH$p.adj, digits=3)
+stat.test_Holm$p.adj <- round(stat.test_Holm$p.adj, digits=3)
+
+p <- ggboxplot(
+  metabolite_concentrations_time_0_incl_metadata_log10_long, x = "ESBL_status", y = "value",
+  color = "ESBL_status",palette=c("dodgerblue2", "orange"), facet.by = "Metabolite", ylim = c(-3, 3), ylab ="Concentrations (μM/g feces) after log transformation and scaling", xlab="", legend.title="ESBL status", font.legend = 12, font.x = 12, )
+
+metabolites_differential_abundance_BH <- p + stat_pvalue_manual(stat.test_BH, label = "p.adj") + theme_gray() + ggtitle("Multi-error correction using Benjamini-Hochberg")
+metabolites_differential_abundance_Holm <- p + stat_pvalue_manual(stat.test_Holm, label = "p.adj") + theme_gray() + ggtitle("Multi-error correction using Holm")
+
+ggsave(file="Preliminary/Fig_S4.svg", plot=metabolites_differential_abundance_BH, width=16, height=12,dpi=1200)
+
+ggsave(file="Preliminary/Fig_S5.svg", plot=metabolites_differential_abundance_Holm, width=16, height=12,dpi=1200)
+```
+
+
+## PCA
+```{r}
+metabolite_concentrations_time_0_incl_metadata_log10_num <- metabolite_concentrations_time_0_incl_metadata_log10 %>% dplyr::select(where(is.numeric))
+
+pca_res <- prcomp(metabolite_concentrations_time_0_incl_metadata_log10_num, center=TRUE, scale=FALSE) ## center argument is kind of redundant since data is already centered
+scree_plot_info <- fviz_eig(pca_res) ## Investigate scree plot of PCA. Clearly the first 2 axes have by far the largest explained variance. Can also extract contribution from data$eig
+PCi<-data.frame(pca_res$x,ESBL_group=metabolite_concentrations_time_0_incl_metadata_log10$ESBL_status)
+
+##also check which metabolites drive the separation
+fviz_pca_var(pca_res,col.var = "contrib",gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),repel = TRUE)
+
+## Biplot
+fviz_pca_biplot(pca_res, repel = TRUE,
+                col.var = "#2E9FDF",
+                col.ind = "#696969"
+                )
+             
+metabolites_pca <- ggplot(PCi,aes(x=PC1,y=PC2,col=ESBL_group))+
+   geom_point(size=3)+
+   scale_color_manual(values=c("dodgerblue2", "orange"), name = "ESBL status", labels = c("ESBL negative", "ESBL positive"))+
+   stat_ellipse()+
+   xlab("PC1 (46.4%)")+
+   ylab("PC2 (14.6%)")
+
+ggsave(file="metabolites_pca.svg", plot=metabolites_pca, width=6, height=6,dpi=1200) ## To get approximately same size as SIAMCAT ROC curve
+```
+
+## ropls package for performing PLS-DA. 
+```{r}
+## Need to add row names to both dataframes/matrices. A bit of a pain to work with tidyverse for rownames, so switch to generic code
+rownames(metabolite_concentrations_time_0_incl_metadata_log10) <- metabolite_concentrations_time_0_incl_metadata_log10$participant_number
+metabolite_concentrations_time_0_incl_metadata_log10_df <- as.data.frame(metabolite_concentrations_time_0_incl_metadata_log10)
+metabolite_concentrations_time_0_incl_metadata_log10_df_num <- Filter(is.numeric,metabolite_concentrations_time_0_incl_metadata_log10_df)
+metabolite_concentrations_time_0_incl_metadata_log10_df_metadata <- metabolite_concentrations_time_0_incl_metadata_log10_df[,1:2]
+
+metabolites.plsda <- opls(metabolite_concentrations_time_0_incl_metadata_log10_df_num, metabolite_concentrations_time_0_incl_metadata_log10_df_metadata[, "ESBL_status"],predI = 2, permI = 1000) ## the predI=2 is necessary to force the model to compute, since apparently even the first component is not meaningful, so absolutely no separation between the classes (negative q2 value, which is the value that indicates predictability)
+vipVn_metabolomics <- data.frame(Metabolite = colnames(metabolite_concentrations_time_0_incl_metadata_log10_df_num), getVipVn(metabolites.plsda)) ## All VIPs hover around 1, indicating there is really no predictive power to discriminate the groups.
+
+metabolites.oplsda <- opls(metabolite_concentrations_time_0_incl_metadata_log10_df_num, metabolite_concentrations_time_0_incl_metadata_log10_df_metadata[, "ESBL_status"],predI = 2,orthoI = NA, permI = 1000)
+```
+## Try RF using SIAMCAT, first prep data files in proper format
+```{r}
+set.seed(1000)
+rownames(metabolite_concentrations_time_0_incl_metadata_log10) <- metabolite_concentrations_time_0_incl_metadata_log10$participant_number
+metabolite_concentrations_time_0_incl_metadata_log10_df <- as.data.frame(metabolite_concentrations_time_0_incl_metadata_log10)
+metabolite_concentrations_time_0_incl_metadata_log10_df_num <- Filter(is.numeric,metabolite_concentrations_time_0_incl_metadata_log10_df)
+metabolite_concentrations_time_0_incl_metadata_log10_df_metadata <- metabolite_concentrations_time_0_incl_metadata_log10_df[,1:2]
+
+metabolites_matrix_siamcat <- t(metabolite_concentrations_time_0_incl_metadata_log10_df_num)
+label_esbl <- create.label(meta=metabolite_concentrations_time_0_incl_metadata_log10_df_metadata,label='ESBL_status', case='ESBL_positive')
+
+rm(sc.obj)
+sc.obj <- siamcat(feat=metabolites_matrix_siamcat,label=label_esbl,meta=metabolite_concentrations_time_0_incl_metadata_log10_df_metadata)
+sc.obj <- filter.features(sc.obj,filter.method = "pass")
+sc.obj <- normalize.features(sc.obj,norm.method = "pass")
+sc.obj <- create.data.split(sc.obj,num.folds = 5)
+sc.obj <- train.model(sc.obj,method = "randomForest") 
+sc.obj <- make.predictions(sc.obj)
+pred_matrix <- pred_matrix(sc.obj)
+sc.obj <-  evaluate.predictions(sc.obj)
+model.evaluation.plot(sc.obj)
+model.evaluation.plot(sc.obj,fn.plot="Fig_4B.pdf")
+
+ggarrange(metabolites_pca,model.evaluation.plot(sc.obj),labels=c("A","B",ncol=1,nrow=2))
+
+sc.obj@model_list$models[[1]]
+```
+

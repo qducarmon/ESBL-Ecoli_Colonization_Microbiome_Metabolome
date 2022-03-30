@@ -1,0 +1,58 @@
+---
+title: "PERMANOVA"
+author: "QD"
+date: "9-11-2020"
+output: html_document
+---
+
+```{r}
+metadata_perm<-meta(taxonomy_samples_phyloseq_rel_abun)
+bray_matrix<-phyloseq::distance(taxonomy_samples_phyloseq_rel_abun,method="bray")
+betadisper_test<-betadisper(bray_matrix,metadata_perm$ESBL_status)
+permutest(betadisper_test) ##Means we cannot reject that the groups have the same dispersions, so this gives us higher confidence that adonis rseults are real
+set.seed(1000) ## To ensure reproducible results
+adonis_result<-adonis(bray_matrix~ESBL_status,data=metadata_perm,permutations=9999) ## So ESBL- Ecoli status is clearly not significant. Now test a bunch of other factors
+adonis(bray_matrix~diseasehay+diseaseastma+medicinescholest+symptomscough_av+symptomsnose_av+antibiotic12mont,data=metadata_perm,permutations=9999)
+```
+
+##Check per factor if betadisper requirement holds and run individual factors on permanova as well
+```{r}
+betadisper_test_Building<-betadisper(bray_matrix,metadata_perm$Building)
+permutest(betadisper_test_Building) #Means we have to reject that the groups have the same dispersions, and this makes results/interpretation of adonis results less reliable. Can consider to use the alternative test here (Wd*)
+set.seed(1000) ## To ensure reproducible results
+adonis_result_Building<-adonis(bray_matrix~Building,data=metadata_perm,permutations=9999)
+```
+
+## on KEGG KO relative abundance
+```{r}
+metadata_perm<-meta(phyloseq_kegg_rel_abun)
+bray_matrix<-phyloseq::distance(phyloseq_kegg_rel_abun,method="bray")
+betadisper_test<-betadisper(bray_matrix,metadata_perm$ESBL_status)
+permutest(betadisper_test) ##Means we cannot reject that the groups have the same dispersions, so this gives us higher confidence that adonis rseults are real
+set.seed(1000) ## To ensure reproducible results
+adonis_result<-adonis(bray_matrix~ESBL_status,data=metadata_perm,permutations=9999) ## So ESBL- Ecoli status is clearly not significant. Now test a bunch of other factors
+adonis(bray_matrix~diseasehay+diseaseastma+medicinescholest+symptomscough_av+symptomsnose_av+antibiotic12mont,data=metadata_perm,permutations=9999)
+```
+
+## On CAZy relative abundance
+```{r}
+metadata_perm<-meta(phyloseq_cazy_rel_abun)
+bray_matrix<-phyloseq::distance(phyloseq_cazy_rel_abun,method="bray")
+betadisper_test<-betadisper(bray_matrix,metadata_perm$ESBL_status)
+permutest(betadisper_test) ##Means we cannot reject that the groups have the same dispersions, so this gives us higher confidence that adonis rseults are real
+set.seed(1000) ## To ensure reproducible results
+adonis_result<-adonis(bray_matrix~ESBL_status,data=metadata_perm,permutations=9999) ## So ESBL- Ecoli status is clearly not significant. Now test a bunch of other factors
+adonis(bray_matrix~diseasehay+diseaseastma+medicinescholest+symptomscough_av+symptomsnose_av+antibiotic12mont,data=metadata_perm,permutations=9999)
+```
+
+## Resistome relative abundance at gene level
+```{r}
+metadata_perm<-meta(phyloseq_resistome_gene_rel_abun)
+bray_matrix<-phyloseq::distance(phyloseq_resistome_gene_rel_abun,method="bray")
+betadisper_test<-betadisper(bray_matrix,metadata_perm$ESBL_status)
+permutest(betadisper_test) ##Means we cannot reject that the groups have the same dispersions, so this gives us higher confidence that adonis rseults are real
+set.seed(1000) ## To ensure reproducible results
+adonis_result<-adonis(bray_matrix~ESBL_status,data=metadata_perm,permutations=9999) ## So ESBL- Ecoli status is clearly not significant. Now test a bunch of other factors
+adonis(bray_matrix~diseasehay+diseaseastma+medicinescholest+symptomscough_av+symptomsnose_av+antibiotic12mont,data=metadata_perm,permutations=9999)
+```
+
